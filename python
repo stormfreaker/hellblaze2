@@ -1,8 +1,29 @@
 import os
 import socket
-import paramiko
 import requests
+import paramiko
 from datetime import datetime
+
+REMOTE_IP = "192.168.56.104"
+USERNAME = "diablo" 
+PASSWORD = "Hellblaze@354" 
+
+def test_ssh_connection():
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        ssh.connect(REMOTE_IP, username=USERNAME, password=PASSWORD)
+        print(f"Connected to {REMOTE_IP}")
+
+        stdin, stdout, stderr = ssh.exec_command("echo Hello from Linux!")
+        print(stdout.read().decode())
+
+        ssh.close()
+
+    
+    except Exception as e:
+        print(f"Error: {e}")
 
 def show_date_time():
     """Display the local date and time."""
@@ -16,66 +37,59 @@ def show_ip_address():
     print(ip_address)
 
 def show_remote_home_directory():
-    """Show the home directory of a remote computer."""
-    print("\nRemote Home Directory Listing:")
-    remote_ip = "10.50.98.54"
-    username = "ZEGION"
-    password = "4053"
-
+    """Show the home directory listing of the remote Linux machine."""
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(remote_ip, username=username, password=password)
-        sftp = ssh.open_sftp()
-        for file in sftp.listdir("."):  # List files in the remote home directory
-            print(file)
-        sftp.close()
+        ssh.connect(REMOTE_IP, username=USERNAME, password=PASSWORD)
+
+        stdin, stdout, stderr = ssh.exec_command("ls ~")
+        print("\nRemote Home Directory Listing:")
+        for line in stdout.readlines():
+            print(line.strip())
+
         ssh.close()
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error connecting to the remote server: {e}")
 
 def backup_remote_file():
     """Back up a remote file by renaming it with a .old suffix."""
-    remote_ip = "10.30.194.63"  # Replace with your remote IP
-    username = "user"            # Replace with your username
-    password = "password"        # Replace with your password
-
-    file_path = input("Enter the full path of the file to back up: ")
+    file_path = input("\nEnter the full path of the file to back up: ")
 
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(remote_ip, username=username, password=password)
+        ssh.connect(REMOTE_IP, username=USERNAME, password=PASSWORD)
 
-        sftp = ssh.open_sftp()
         backup_path = file_path + ".old"
-        sftp.rename(file_path, backup_path)  # Rename file to create a backup
+        ssh.exec_command(f"mv {file_path} {backup_path}")
         print(f"File backed up as: {backup_path}")
-        sftp.close()
+
         ssh.close()
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error connecting to the remote server: {e}")
 
 def save_web_page():
     """Save the HTML content of a web page to a local file."""
-    url = input("Enter the URL of the web page: ")
+    url = input("\nEnter the URL of the web page: ")
     file_name = input("Enter the file name to save the web page (e.g., page.html): ")
 
     try:
         response = requests.get(url)
+        response.raise_for_status()
         with open(file_name, "w", encoding="utf-8") as file:
             file.write(response.text)
         print(f"Web page saved as: {file_name}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error saving the web page: {e}")
 
 def main():
     """Main menu for the program."""
     while True:
         print("\nMenu:")
-        print("1 - Show date and time")
+        print("1 - Show date and time ")
         print("2 - Show IP address")
-        print("3 - Show remote home directory")
+        print("3 - Show Remote home directory listing")
         print("4 - Backup remote file")
         print("5 - Save web page")
         print("Q - Quit")
